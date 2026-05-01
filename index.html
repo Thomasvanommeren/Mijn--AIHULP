@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vraag het AI</title>
+</head>
+<body>
+
+<h1>Stel je vraag</h1>
+
+<input id="vraag" placeholder="Typ je vraag">
+<button onclick="ask()">Verstuur</button>
+
+<p id="antwoord"></p>
+
+<script>
+async function ask() {
+  const vraag = document.getElementById("vraag").value;
+
+  const res = await fetch("https://jouw-vercel-url/api/ask", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ vraag })
+  });
+
+  const data = await res.json();
+  document.getElementById("antwoord").innerText = data.antwoord;
+}
+</script>
+
+</body>
+</html>
