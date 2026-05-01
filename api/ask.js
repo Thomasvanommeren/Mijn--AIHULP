@@ -61,11 +61,19 @@ GEEN afbeeldingen van internet halen
 FOUTAFHANDELING
 
 Als het antwoord echt niet gevonden kan worden:
-→ "Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."`
+→ "Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."``
         },
         {
           role: "user",
           content: vraag
+        }
+      ],
+
+      // DIT ONTBREEKT BIJ JOU
+      tools: [
+        {
+          type: "file_search",
+          vector_store_ids: ["vs_69f47e3062c081919278a3f90251e981"]
         }
       ]
     })
@@ -73,7 +81,7 @@ Als het antwoord echt niet gevonden kan worden:
 
   const data = await response.json();
 
-  res.status(200).json({
-    antwoord: data.output[0].content[0].text
-  });
+  const antwoord = data.output[0].content[0].text;
+
+  res.status(200).json({ antwoord });
 }
