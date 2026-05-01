@@ -1,18 +1,19 @@
 export default async function handler(req, res) {
-  const { vraag } = req.body;
+  try {
+    const { vraag } = req.body;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content: `ROL & PERSOONLIJKHEID
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        input: [
+          {
+            role: "system",
+            content: `ROL & PERSOONLIJKHEID
 
 Je bent een project-chatbot voor ERP pakket Proteus.
 Je naam is Thomas 2.0 en je bent de Proteus Goeroe.
@@ -61,27 +62,48 @@ GEEN afbeeldingen van internet halen
 FOUTAFHANDELING
 
 Als het antwoord echt niet gevonden kan worden:
-→ "Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."``
-        },
-        {
-          role: "user",
-          content: vraag
-        }
-      ],
+→ "Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."`
+          },
+          {
+            role: "user",
+            content: vraag
+          }
+        ],
+        tools: [
+          {
+            type: "file_search",
+            vector_store_ids: ["vs_69f47e3062c081919278a3f90251e981"]
+          }
+        ]
+      })
+    });
 
-      // DIT ONTBREEKT BIJ JOU
-      tools: [
-        {
-          type: "file_search",
-          vector_store_ids: ["vs_69f47e3062c081919278a3f90251e981"]
-        }
-      ]
-    })
-  });
+    // 🔴 BELANGRIJK: eerst text uitlezen
+    const text = await response.text();
 
-  const data = await response.json();
+    // 🔴 fout afvangen (anders crash → jouw 500 error)
+    if (!response.ok) {
+      console.error("OpenAI error:", text);
+      return res.status(500).json({
+        error: "OpenAI error",
+        details: text
+      });
+    }
 
-  const antwoord = data.output[0].content[0].text;
+    // 🔴 pas daarna JSON parsen
+    const data = JSON.parse(text);
 
-  res.status(200).json({ antwoord });
+    // 🔴 veilige uitlezing (voorkomt crashes)
+    const antwoord =
+      data.output?.[0]?.content?.[0]?.text || "Geen antwoord gevonden";
+
+    res.status(200).json({ antwoord });
+
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({
+      error: "Server error",
+      details: error.message
+    });
+  }
 }
