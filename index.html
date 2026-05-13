@@ -295,6 +295,8 @@
   const chat = document.getElementById("chat");
   let conversationHistory = [];
   let pastedImageDataUrl = null;
+  const sessieId = localStorage.getItem("sessieId") || crypto.randomUUID();
+  localStorage.setItem("sessieId", sessieId);
 
   if (localStorage.getItem("loggedIn") === "true") {
     showChat();
@@ -461,7 +463,9 @@
         body: JSON.stringify({
           vraag,
           history: conversationHistory,
-          screenshot: imageDataUrl
+          screenshot: imageDataUrl,
+          gebruiker: "Proteus gebruiker",
+          sessie: sessieId
         })
       });
 

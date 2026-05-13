@@ -6,7 +6,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const { vraag = "", history = [], screenshot = null } = req.body || {};
+    const { vraag = "", history = [], screenshot = null, gebruiker = "", sessie = "" } = req.body || {};
 
     if (!vraag && !screenshot) {
       return res.status(400).json({
@@ -36,6 +36,9 @@ export default async function handler(req, res) {
         image_url: screenshot
       });
     }
+
+
+    const sheetsWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || process.env.SHEETS_WEBHOOK_URL;
 
     const cleanHistory = Array.isArray(history)
       ? history
@@ -144,6 +147,22 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
           }
         }
       }
+    }
+
+    if (sheetsWebhookUrl) {
+      fetch(sheetsWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          vraag,
+          antwoord,
+          screenshot,
+          gebruiker,
+          sessie
+        })
+      }).catch(() => null);
     }
 
     return res.status(200).json({
