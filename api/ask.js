@@ -6,17 +6,34 @@ export default async function handler(req, res) {
       });
     }
 
-    const { vraag, history = [] } = req.body || {};
+    const { vraag = "", history = [], screenshot = null } = req.body || {};
 
-    if (!vraag) {
+    if (!vraag && !screenshot) {
       return res.status(400).json({
-        error: "Geen vraag ontvangen"
+        error: "Geen vraag of screenshot ontvangen"
       });
     }
 
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({
         error: "OPENAI_API_KEY ontbreekt in Vercel"
+      });
+    }
+
+
+    const userContent = [];
+
+    if (vraag) {
+      userContent.push({
+        type: "input_text",
+        text: vraag
+      });
+    }
+
+    if (screenshot && typeof screenshot === "string") {
+      userContent.push({
+        type: "input_image",
+        image_url: screenshot
       });
     }
 
@@ -86,7 +103,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
           ...cleanHistory,
           {
             role: "user",
-            content: vraag
+            content: userContent
           }
         ],
         tools: [

@@ -53,7 +53,7 @@
     }
 
     #chat {
-      height: calc(100vh - 180px);
+      height: calc(100vh - 230px);
       overflow-y: auto;
       padding: 20px;
       display: flex;
@@ -83,9 +83,15 @@
 
     #inputArea {
       display: flex;
+      flex-direction: column;
       padding: 15px;
       background: white;
       border-top: 1px solid #ddd;
+      gap: 10px;
+    }
+
+    #composeRow {
+      display: flex;
       gap: 10px;
       align-items: flex-end;
     }
@@ -100,6 +106,19 @@
       font-family: Arial, sans-serif;
       resize: none;
       box-sizing: border-box;
+    }
+
+    #uploadRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #imageName {
+      font-size: 14px;
+      color: #555;
     }
 
     button {
@@ -131,8 +150,6 @@
   Proteus AI Assistent
 </header>
 
-<!-- LOGIN -->
-
 <div id="loginScreen">
 
   <div id="loginBox">
@@ -155,8 +172,6 @@
 
 </div>
 
-<!-- CHAT -->
-
 <div id="chatScreen" style="display:none;">
 
   <div id="chat">
@@ -170,16 +185,21 @@
   </div>
 
   <div id="inputArea">
+    <div id="uploadRow">
+      <input type="file" id="imageInput" accept="image/*">
+      <span id="imageName">Geen screenshot geselecteerd</span>
+    </div>
 
-    <textarea
-      id="vraag"
-      placeholder="Typ je vraag..."
-    ></textarea>
+    <div id="composeRow">
+      <textarea
+        id="vraag"
+        placeholder="Typ je vraag..."
+      ></textarea>
 
-    <button onclick="ask()">
-      Verstuur
-    </button>
-
+      <button onclick="ask()">
+        Verstuur
+      </button>
+    </div>
   </div>
 
 </div>
@@ -187,20 +207,27 @@
 <script>
 
   const vraagInput = document.getElementById("vraag");
+  const imageInput = document.getElementById("imageInput");
+  const imageName = document.getElementById("imageName");
   const chat = document.getElementById("chat");
   let conversationHistory = [];
 
-  // Sessie controleren
   if (localStorage.getItem("loggedIn") === "true") {
     showChat();
   }
+
+  imageInput?.addEventListener("change", () => {
+    const file = imageInput.files?.[0];
+    imageName.textContent = file
+      ? `Screenshot: ${file.name}`
+      : "Geen screenshot geselecteerd";
+  });
 
   function login() {
 
     const password =
       document.getElementById("password").value;
 
-    // Tijdelijk hardcoded
     if (password === "Proteus2026!") {
 
       localStorage.setItem("loggedIn", "true");
@@ -222,7 +249,6 @@
     document.getElementById("chatScreen").style.display = "block";
   }
 
-  // ENTER versturen
   vraagInput?.addEventListener("keydown", function(event) {
 
     if (event.key === "Enter" && !event.shiftKey) {
@@ -250,13 +276,27 @@
     return div;
   }
 
+  function readImageAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function ask() {
 
     const vraag = vraagInput.value.trim();
+    const selectedImage = imageInput.files?.[0];
 
-    if (!vraag) return;
+    if (!vraag && !selectedImage) return;
 
-    addMessage(vraag, "user");
+    if (vraag) {
+      addMessage(vraag, "user");
+    } else {
+      addMessage("[Screenshot verstuurd zonder tekst]", "user");
+    }
 
     vraagInput.value = "";
 
@@ -266,13 +306,20 @@
     );
 
     try {
+      const imageDataUrl = selectedImage
+        ? await readImageAsDataUrl(selectedImage)
+        : null;
 
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ vraag })
+        body: JSON.stringify({
+          vraag,
+          history: conversationHistory,
+          screenshot: imageDataUrl
+        })
       });
 
       const data = await res.json();
@@ -290,10 +337,16 @@
         return;
       }
 
-      addMessage(
-        data.antwoord || "Geen antwoord ontvangen.",
-        "bot"
-      );
+      const antwoord = data.antwoord || "Geen antwoord ontvangen.";
+      addMessage(antwoord, "bot");
+
+      if (vraag) {
+        conversationHistory.push({ role: "user", content: vraag });
+      }
+      conversationHistory.push({ role: "assistant", content: antwoord });
+
+      imageInput.value = "";
+      imageName.textContent = "Geen screenshot geselecteerd";
 
     } catch (error) {
 
