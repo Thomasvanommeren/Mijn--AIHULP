@@ -188,6 +188,7 @@
 
   const vraagInput = document.getElementById("vraag");
   const chat = document.getElementById("chat");
+  let conversationHistory = [];
 
   // Sessie controleren
   if (localStorage.getItem("loggedIn") === "true") {
