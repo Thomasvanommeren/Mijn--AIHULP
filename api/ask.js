@@ -149,7 +149,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
 
     if (process.env.GOOGLE_SHEET_WEBHOOK) {
       try {
-        await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
+        const sheetResponse = await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -162,6 +162,11 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
             sessie: "proteus-ai"
           })
         });
+
+        if (!sheetResponse.ok) {
+          const sheetErrorText = await sheetResponse.text();
+          console.error("Google Sheets logging failed:", sheetResponse.status, sheetErrorText);
+        }
       } catch (sheetError) {
         console.error("Google Sheets logging error:", sheetError);
       }
