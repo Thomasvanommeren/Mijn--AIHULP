@@ -211,6 +211,7 @@
   const imageName = document.getElementById("imageName");
   const chat = document.getElementById("chat");
   let conversationHistory = [];
+  let pastedImageDataUrl = null;
 
   if (localStorage.getItem("loggedIn") === "true") {
     showChat();
@@ -218,9 +219,30 @@
 
   imageInput?.addEventListener("change", () => {
     const file = imageInput.files?.[0];
+
+    if (file) {
+      pastedImageDataUrl = null;
+    }
+
     imageName.textContent = file
       ? `Screenshot: ${file.name}`
       : "Geen screenshot geselecteerd";
+  });
+
+  vraagInput?.addEventListener("paste", async (event) => {
+    const items = event.clipboardData?.items || [];
+
+    for (const item of items) {
+      if (!item.type.startsWith("image/")) continue;
+
+      const file = item.getAsFile();
+      if (!file) continue;
+
+      pastedImageDataUrl = await readImageAsDataUrl(file);
+      imageInput.value = "";
+      imageName.textContent = "Screenshot: geplakt met Ctrl+V";
+      break;
+    }
   });
 
   function login() {
@@ -290,7 +312,7 @@
     const vraag = vraagInput.value.trim();
     const selectedImage = imageInput.files?.[0];
 
-    if (!vraag && !selectedImage) return;
+    if (!vraag && !selectedImage && !pastedImageDataUrl) return;
 
     if (vraag) {
       addMessage(vraag, "user");
@@ -308,7 +330,7 @@
     try {
       const imageDataUrl = selectedImage
         ? await readImageAsDataUrl(selectedImage)
-        : null;
+        : pastedImageDataUrl;
 
       const res = await fetch("/api/ask", {
         method: "POST",
@@ -346,6 +368,7 @@
       conversationHistory.push({ role: "assistant", content: antwoord });
 
       imageInput.value = "";
+      pastedImageDataUrl = null;
       imageName.textContent = "Geen screenshot geselecteerd";
 
     } catch (error) {
