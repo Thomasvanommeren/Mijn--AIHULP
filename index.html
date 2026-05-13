@@ -38,6 +38,12 @@
       height: calc(100vh - 70px);
     }
 
+    #chatScreen {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     #loginScreen {
       display: flex;
       justify-content: center;
@@ -62,7 +68,8 @@
     }
 
     #chat {
-      height: calc(100vh - 230px);
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 20px;
       display: flex;
@@ -93,6 +100,8 @@
     #inputArea {
       display: flex;
       flex-direction: column;
+      position: sticky;
+      bottom: 0;
       padding: 15px;
       background: white;
       border-top: 1px solid #ddd;
