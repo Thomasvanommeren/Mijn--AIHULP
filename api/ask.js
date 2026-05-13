@@ -89,59 +89,46 @@ FOUTAFHANDELING
 Als het antwoord echt niet gevonden kan worden:
 → "Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."
 `
-          },
-
+                    },
           {
             role: "user",
             content: vraag
           }
         ],
-
         tools: [
           {
-           type: "file_search"
-  }
-],
-
-tool_resources: {
-  file_search: {
-    vector_store_ids: [
-      "vs_69f47e3062c081919278a3f90251e981"
+            type: "file_search",
+            vector_store_ids: [
+              "vs_69f47e3062c081919278a3f90251e981"
             ]
           }
         ]
       })
     });
 
-    // Eerst als text uitlezen
-    const text = await response.text();
+    const text = await openaiResponse.text();
 
-    // OpenAI foutmelding
-    if (!response.ok) {
+    if (!openaiResponse.ok) {
       console.error("OpenAI error:", text);
 
-      return res.status(response.status).json({
+      return res.status(openaiResponse.status).json({
         error: "OpenAI error",
         details: text
       });
     }
 
-    // JSON parsen
     const data = JSON.parse(text);
 
-    // Antwoord veilig uitlezen
     const antwoord =
       data.output_text ||
       data.output?.[0]?.content?.[0]?.text ||
       "Geen antwoord gevonden";
 
-    // Succes response
     return res.status(200).json({
-      antwoord
+      antwoord: antwoord
     });
 
   } catch (error) {
-
     console.error("Server error:", error);
 
     return res.status(500).json({
