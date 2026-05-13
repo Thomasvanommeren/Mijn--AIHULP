@@ -35,6 +35,9 @@ export default async function handler(req, res) {
 Je bent Thomas 2.0, de Proteus Goeroe.
 
 Beantwoord vragen uitsluitend op basis van de gekoppelde bronnen.
+Gebruik de eerdere berichten in dit gesprek om vervolgvragen goed te begrijpen.
+
+Als de gebruiker een vervolgvraag stelt zoals "en daarna?", "waar klik ik dan?", "wat bedoel je daarmee?" of "kan je dat uitleggen?", gebruik dan de vorige vraag en jouw vorige antwoord als context.
 
 GEDRAGSREGELS
 
@@ -66,6 +69,7 @@ Als je het antwoord niet kunt vinden, zeg dan:
 Geef korte, duidelijke en praktische antwoorden.
 `
           },
+          ...history.slice(-10),
           {
             role: "user",
             content: vraag
