@@ -479,6 +479,12 @@
 
       addUserMessage(vraag, currentImage);
 
+      vraagInput.value = "";
+      pastedImageBase64 = null;
+      attachmentPreviewImg.removeAttribute("src");
+      attachmentPreview.style.display = "none";
+      imageName.textContent = "Plak een screenshot met Ctrl+V";
+
       loadingMessage = addMessage(
         "Thomas 2.0 denkt even na...",
         "bot"
@@ -521,11 +527,6 @@
       }
       conversationHistory.push({ role: "assistant", content: antwoord });
 
-      vraagInput.value = "";
-      pastedImageBase64 = null;
-      attachmentPreviewImg.removeAttribute("src");
-      attachmentPreview.style.display = "none";
-      imageName.textContent = "Plak een screenshot met Ctrl+V";
 
     } catch (error) {
 
