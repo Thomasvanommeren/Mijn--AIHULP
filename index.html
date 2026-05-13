@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,82 +8,171 @@
   <title>Thomas 2.0 - Proteus Goeroe</title>
 
   <style>
+
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 50px auto;
+      background: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #222;
+      color: white;
       padding: 20px;
-      background: #f5f5f5;
+      font-size: 22px;
+      font-weight: bold;
     }
 
-    h1 {
-      color: #222;
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    button {
-      margin-top: 10px;
-      padding: 12px 20px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    #antwoord {
-      margin-top: 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 8px;
-      min-height: 80px;
+    .message {
+      max-width: 75%;
+      padding: 12px 15px;
+      border-radius: 12px;
+      line-height: 1.5;
       white-space: pre-wrap;
     }
 
-    .loading {
-      opacity: 0.6;
+    .user {
+      align-self: flex-end;
+      background: #007aff;
+      color: white;
     }
+
+    .bot {
+      align-self: flex-start;
+      background: white;
+      border: 1px solid #ddd;
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 15px;
+      background: white;
+      border-top: 1px solid #ddd;
+      gap: 10px;
+    }
+
+    #vraag {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #222;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .loading {
+      opacity: 0.7;
+      font-style: italic;
+    }
+
   </style>
 </head>
 
 <body>
 
-  <h1>Thomas 2.0 - Proteus Goeroe</h1>
+  <header>
+    Thomas 2.0 - Proteus Goeroe
+  </header>
 
-  <input
-    id="vraag"
-    type="text"
-    placeholder="Typ je vraag over Proteus..."
-  >
+  <div id="chat">
 
-  <button onclick="ask()">
-    Verstuur
-  </button>
+    <div class="message bot">
+      Hey, ik ben Thomas 2.0 👋<br><br>
+      Stel je vraag over Proteus.
+    </div>
 
-  <div id="antwoord">
-    Stel een vraag aan Thomas 2.0
+  </div>
+
+  <div id="inputArea">
+
+    <input
+      id="vraag"
+      type="text"
+      placeholder="Typ je vraag over Proteus..."
+    >
+
+    <button onclick="ask()">
+      Verstuur
+    </button>
+
   </div>
 
   <script>
 
-    async function ask() {
+    const vraagInput = document.getElementById("vraag");
+    const chat = document.getElementById("chat");
 
-      const vraagInput = document.getElementById("vraag");
-      const antwoordDiv = document.getElementById("antwoord");
+    // ENTER versturen
+    vraagInput.addEventListener("keypress", function(event) {
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        ask();
+      }
+
+    });
+
+    function addMessage(text, type) {
+
+      const div = document.createElement("div");
+
+      div.classList.add("message");
+      div.classList.add(type);
+
+      div.innerText = text;
+
+      chat.appendChild(div);
+
+      // auto scroll naar beneden
+      chat.scrollTop = chat.scrollHeight;
+
+      return div;
+    }
+
+    async function ask() {
 
       const vraag = vraagInput.value.trim();
 
-      if (!vraag) {
-        antwoordDiv.innerText = "Typ eerst een vraag.";
-        return;
-      }
+      if (!vraag) return;
 
-      antwoordDiv.classList.add("loading");
-      antwoordDiv.innerText = "Thomas 2.0 denkt even na...";
+      // Vraag gebruiker tonen
+      addMessage(vraag, "user");
+
+      // Input leegmaken
+      vraagInput.value = "";
+
+      // Loading bericht
+      const loadingMessage = addMessage(
+        "Thomas 2.0 denkt even na...",
+        "bot"
+      );
+
+      loadingMessage.classList.add("loading");
 
       try {
 
@@ -96,32 +186,35 @@
 
         const data = await res.json();
 
-        // API foutmelding
-        if (!res.ok) {
-          console.error(data);
+        // loading vervangen
+        loadingMessage.remove();
 
-          antwoordDiv.innerText =
+        if (!res.ok) {
+
+          addMessage(
             "Serverfout:\n\n" +
-            (data.details || data.error || "Onbekende fout");
+            (data.details || data.error || "Onbekende fout"),
+            "bot"
+          );
 
           return;
         }
 
-        // Succes
-        antwoordDiv.innerText =
-          data.antwoord || "Geen antwoord ontvangen.";
+        addMessage(
+          data.antwoord || "Geen antwoord ontvangen.",
+          "bot"
+        );
 
       } catch (error) {
 
         console.error(error);
 
-        antwoordDiv.innerText =
-          "Er ging iets mis met de verbinding.";
+        loadingMessage.remove();
 
-      } finally {
-
-        antwoordDiv.classList.remove("loading");
-
+        addMessage(
+          "Er ging iets mis met de verbinding.",
+          "bot"
+        );
       }
     }
 
