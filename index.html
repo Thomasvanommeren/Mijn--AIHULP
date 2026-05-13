@@ -161,6 +161,38 @@
       color: #555;
     }
 
+    #pendingPreview {
+      position: relative;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+
+    #pendingPreviewImg {
+      width: min(260px, 60vw);
+      max-height: 180px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #d7e2ee;
+      background: #fff;
+      display: block;
+    }
+
+    #removePreviewBtn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 26px;
+      min-width: 26px;
+      height: 26px;
+      padding: 0;
+      border-radius: 50%;
+      background: #1e1e1e;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+
     button {
       padding: 14px 22px;
       font-size: 16px;
@@ -232,6 +264,11 @@
       <span id="imageName">Geen screenshot geselecteerd</span>
     </div>
 
+    <div id="pendingPreview" style="display:none;">
+      <img id="pendingPreviewImg" alt="Screenshot preview">
+      <button id="removePreviewBtn" type="button">×</button>
+    </div>
+
     <div id="composeRow">
       <textarea
         id="vraag"
@@ -251,6 +288,9 @@
   const vraagInput = document.getElementById("vraag");
   const imageInput = document.getElementById("imageInput");
   const imageName = document.getElementById("imageName");
+  const pendingPreview = document.getElementById("pendingPreview");
+  const pendingPreviewImg = document.getElementById("pendingPreviewImg");
+  const removePreviewBtn = document.getElementById("removePreviewBtn");
   const chat = document.getElementById("chat");
   let conversationHistory = [];
   let pastedImageDataUrl = null;
@@ -269,6 +309,12 @@
     imageName.textContent = file
       ? `Screenshot: ${file.name}`
       : "Geen screenshot geselecteerd";
+
+    if (file) {
+      readImageAsDataUrl(file).then(renderPendingPreview);
+    } else {
+      renderPendingPreview(null);
+    }
   });
 
   vraagInput?.addEventListener("paste", async (event) => {
@@ -283,6 +329,11 @@
     pastedImageDataUrl = await readImageAsDataUrl(file);
     imageInput.value = "";
     imageName.textContent = "Screenshot: geplakt met Ctrl+V";
+    renderPendingPreview(pastedImageDataUrl);
+  });
+
+  removePreviewBtn?.addEventListener("click", () => {
+    clearPendingScreenshot();
   });
 
   function login() {
@@ -361,22 +412,22 @@
     return div;
   }
 
-  function addImagePreview(imageDataUrl, type) {
+  function renderPendingPreview(imageDataUrl) {
+    if (!imageDataUrl) {
+      pendingPreview.style.display = "none";
+      pendingPreviewImg.removeAttribute("src");
+      return;
+    }
 
-    const div = document.createElement("div");
-    const img = document.createElement("img");
+    pendingPreviewImg.src = imageDataUrl;
+    pendingPreview.style.display = "block";
+  }
 
-    div.classList.add("message", type, "image-preview");
-
-    img.src = imageDataUrl;
-    img.alt = "Screenshot preview";
-
-    div.appendChild(img);
-    chat.appendChild(div);
-
-    chat.scrollTop = chat.scrollHeight;
-
-    return div;
+  function clearPendingScreenshot() {
+    imageInput.value = "";
+    pastedImageDataUrl = null;
+    imageName.textContent = "Geen screenshot geselecteerd";
+    renderPendingPreview(null);
   }
 
 
@@ -407,10 +458,6 @@
         addMessage(vraag, "user");
       } else {
         addMessage("[Screenshot verstuurd zonder tekst]", "user");
-      }
-
-      if (imageDataUrl) {
-        addImagePreview(imageDataUrl, "user");
       }
 
       vraagInput.value = "";
@@ -455,9 +502,7 @@
       }
       conversationHistory.push({ role: "assistant", content: antwoord });
 
-      imageInput.value = "";
-      pastedImageDataUrl = null;
-      imageName.textContent = "Geen screenshot geselecteerd";
+      clearPendingScreenshot();
 
     } catch (error) {
 
