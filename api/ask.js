@@ -38,8 +38,6 @@ export default async function handler(req, res) {
     }
 
 
-    const sheetsWebhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || process.env.SHEETS_WEBHOOK_URL;
-
     const cleanHistory = Array.isArray(history)
       ? history
           .filter(
@@ -149,20 +147,24 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
       }
     }
 
-    if (sheetsWebhookUrl) {
-      fetch(sheetsWebhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          vraag,
-          antwoord,
-          screenshot,
-          gebruiker,
-          sessie
-        })
-      }).catch(() => null);
+    if (process.env.GOOGLE_SHEET_WEBHOOK) {
+      try {
+        await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            datum: new Date().toISOString(),
+            vraag: vraag,
+            antwoord: antwoord,
+            gebruiker: "webchat",
+            sessie: "proteus-ai"
+          })
+        });
+      } catch (sheetError) {
+        console.error("Google Sheets logging error:", sheetError);
+      }
     }
 
     return res.status(200).json({
