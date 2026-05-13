@@ -39,7 +39,7 @@
       background: white;
       padding: 30px;
       border-radius: 12px;
-      width: 300px;
+      width: 320px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
@@ -52,19 +52,8 @@
       border: 1px solid #ccc;
     }
 
-    button {
-      margin-top: 10px;
-      padding: 12px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      background: #222;
-      color: white;
-      cursor: pointer;
-    }
-
     #chat {
-      height: calc(100vh - 150px);
+      height: calc(100vh - 180px);
       overflow-y: auto;
       padding: 20px;
       display: flex;
@@ -98,10 +87,34 @@
       background: white;
       border-top: 1px solid #ddd;
       gap: 10px;
+      align-items: flex-end;
     }
 
     #vraag {
       flex: 1;
+      padding: 14px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      min-height: 55px;
+      font-family: Arial, sans-serif;
+      resize: none;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 14px 22px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    button:hover {
+      opacity: 0.9;
     }
 
     #error {
@@ -158,11 +171,10 @@
 
   <div id="inputArea">
 
-    <input
+    <textarea
       id="vraag"
-      type="text"
       placeholder="Typ je vraag..."
-    >
+    ></textarea>
 
     <button onclick="ask()">
       Verstuur
@@ -188,8 +200,6 @@
       document.getElementById("password").value;
 
     // Tijdelijk hardcoded
-    // later via API veiliger maken
-
     if (password === "Proteus2026!") {
 
       localStorage.setItem("loggedIn", "true");
@@ -212,10 +222,12 @@
   }
 
   // ENTER versturen
-  vraagInput?.addEventListener("keypress", function(event) {
+  vraagInput?.addEventListener("keydown", function(event) {
 
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !event.shiftKey) {
+
       event.preventDefault();
+
       ask();
     }
 
