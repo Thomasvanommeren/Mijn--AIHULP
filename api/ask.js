@@ -99,9 +99,14 @@ Als het antwoord echt niet gevonden kan worden:
 
         tools: [
           {
-            type: "file_search",
-            vector_store_ids: [
-              "vs_69f47e3062c081919278a3f90251e981"
+           type: "file_search"
+  }
+],
+
+tool_resources: {
+  file_search: {
+    vector_store_ids: [
+      "vs_69f47e3062c081919278a3f90251e981"
             ]
           }
         ]
