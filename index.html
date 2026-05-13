@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Thomas 2.0 - Proteus Goeroe</title>
+  <title>Proteus AI Assistent</title>
 
   <style>
 
@@ -13,8 +13,6 @@
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f2f2f2;
-      display: flex;
-      flex-direction: column;
       height: 100vh;
     }
 
@@ -26,8 +24,47 @@
       font-weight: bold;
     }
 
+    #loginScreen,
+    #chatScreen {
+      height: calc(100vh - 70px);
+    }
+
+    #loginScreen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #loginBox {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+    }
+
     #chat {
-      flex: 1;
+      height: calc(100vh - 150px);
       overflow-y: auto;
       padding: 20px;
       display: flex;
@@ -65,29 +102,11 @@
 
     #vraag {
       flex: 1;
-      padding: 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
     }
 
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #222;
-      color: white;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    .loading {
-      opacity: 0.7;
-      font-style: italic;
+    #error {
+      color: red;
+      margin-top: 10px;
     }
 
   </style>
@@ -95,14 +114,43 @@
 
 <body>
 
-  <header>
-    Thomas 2.0 - Proteus Goeroe
-  </header>
+<header>
+  Proteus AI Assistent
+</header>
+
+<!-- LOGIN -->
+
+<div id="loginScreen">
+
+  <div id="loginBox">
+
+    <h2>Login</h2>
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Proteus2026!"
+    >
+
+    <button onclick="login()">
+      Inloggen
+    </button>
+
+    <div id="error"></div>
+
+  </div>
+
+</div>
+
+<!-- CHAT -->
+
+<div id="chatScreen" style="display:none;">
 
   <div id="chat">
 
     <div class="message bot">
-      Hey, ik ben Thomas 2.0 👋<br><br>
+      Hey, ik ben Thomas 2.0 👋
+      <br><br>
       Stel je vraag over Proteus.
     </div>
 
@@ -113,7 +161,7 @@
     <input
       id="vraag"
       type="text"
-      placeholder="Typ je vraag over Proteus..."
+      placeholder="Typ je vraag..."
     >
 
     <button onclick="ask()">
@@ -122,103 +170,130 @@
 
   </div>
 
-  <script>
+</div>
 
-    const vraagInput = document.getElementById("vraag");
-    const chat = document.getElementById("chat");
+<script>
 
-    // ENTER versturen
-    vraagInput.addEventListener("keypress", function(event) {
+  const vraagInput = document.getElementById("vraag");
+  const chat = document.getElementById("chat");
 
-      if (event.key === "Enter") {
-        event.preventDefault();
-        ask();
-      }
+  // Sessie controleren
+  if (localStorage.getItem("loggedIn") === "true") {
+    showChat();
+  }
 
-    });
+  function login() {
 
-    function addMessage(text, type) {
+    const password =
+      document.getElementById("password").value;
 
-      const div = document.createElement("div");
+    // Tijdelijk hardcoded
+    // later via API veiliger maken
 
-      div.classList.add("message");
-      div.classList.add(type);
+    if (password === "Proteus2026!") {
 
-      div.innerText = text;
+      localStorage.setItem("loggedIn", "true");
 
-      chat.appendChild(div);
+      showChat();
 
-      // auto scroll naar beneden
-      chat.scrollTop = chat.scrollHeight;
+    } else {
 
-      return div;
+      document.getElementById("error").innerText =
+        "Onjuist wachtwoord";
+
+    }
+  }
+
+  function showChat() {
+
+    document.getElementById("loginScreen").style.display = "none";
+
+    document.getElementById("chatScreen").style.display = "block";
+  }
+
+  // ENTER versturen
+  vraagInput?.addEventListener("keypress", function(event) {
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      ask();
     }
 
-    async function ask() {
+  });
 
-      const vraag = vraagInput.value.trim();
+  function addMessage(text, type) {
 
-      if (!vraag) return;
+    const div = document.createElement("div");
 
-      // Vraag gebruiker tonen
-      addMessage(vraag, "user");
+    div.classList.add("message");
+    div.classList.add(type);
 
-      // Input leegmaken
-      vraagInput.value = "";
+    div.innerText = text;
 
-      // Loading bericht
-      const loadingMessage = addMessage(
-        "Thomas 2.0 denkt even na...",
+    chat.appendChild(div);
+
+    chat.scrollTop = chat.scrollHeight;
+
+    return div;
+  }
+
+  async function ask() {
+
+    const vraag = vraagInput.value.trim();
+
+    if (!vraag) return;
+
+    addMessage(vraag, "user");
+
+    vraagInput.value = "";
+
+    const loadingMessage = addMessage(
+      "Thomas 2.0 denkt even na...",
+      "bot"
+    );
+
+    try {
+
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ vraag })
+      });
+
+      const data = await res.json();
+
+      loadingMessage.remove();
+
+      if (!res.ok) {
+
+        addMessage(
+          "Serverfout:\n\n" +
+          (data.details || data.error || "Onbekende fout"),
+          "bot"
+        );
+
+        return;
+      }
+
+      addMessage(
+        data.antwoord || "Geen antwoord ontvangen.",
         "bot"
       );
 
-      loadingMessage.classList.add("loading");
+    } catch (error) {
 
-      try {
+      loadingMessage.remove();
 
-        const res = await fetch("/api/ask", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ vraag })
-        });
-
-        const data = await res.json();
-
-        // loading vervangen
-        loadingMessage.remove();
-
-        if (!res.ok) {
-
-          addMessage(
-            "Serverfout:\n\n" +
-            (data.details || data.error || "Onbekende fout"),
-            "bot"
-          );
-
-          return;
-        }
-
-        addMessage(
-          data.antwoord || "Geen antwoord ontvangen.",
-          "bot"
-        );
-
-      } catch (error) {
-
-        console.error(error);
-
-        loadingMessage.remove();
-
-        addMessage(
-          "Er ging iets mis met de verbinding.",
-          "bot"
-        );
-      }
+      addMessage(
+        "Er ging iets mis met de verbinding.",
+        "bot"
+      );
     }
+  }
 
-  </script>
+</script>
 
 </body>
 </html>
