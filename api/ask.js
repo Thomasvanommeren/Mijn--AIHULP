@@ -6,9 +6,11 @@ export default async function handler(req, res) {
       });
     }
 
-    const { vraag = "", history = [], screenshot = null, gebruiker = "", sessie = "" } = req.body || {};
+    const { vraag = "", history = [], screenshot = null, imageBase64 = null, gebruiker = "", sessie = "" } = req.body || {};
 
-    if (!vraag && !screenshot) {
+    const providedImage = imageBase64 || screenshot;
+
+    if (!vraag && !providedImage) {
       return res.status(400).json({
         error: "Geen vraag of screenshot ontvangen"
       });
@@ -30,10 +32,10 @@ export default async function handler(req, res) {
       });
     }
 
-    if (screenshot && typeof screenshot === "string") {
+    if (providedImage && typeof providedImage === "string") {
       userContent.push({
         type: "input_image",
-        image_url: screenshot
+        image_url: providedImage
       });
     }
 
