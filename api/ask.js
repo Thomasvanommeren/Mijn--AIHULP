@@ -57,34 +57,31 @@ Geef korte, duidelijke en praktische antwoorden.
       })
     });
 
-    const text = await response.text();
-
-    if (!response.ok) {
-      console.error("OpenAI error:", text);
-
-      return res.status(response.status).json({
-        error: "OpenAI error",
-        details: text
-      });
-    }
-
     const data = JSON.parse(text);
 
-    const antwoord =
-      data.output_text ||
-      data.output?.[0]?.content?.[0]?.text ||
-      "Geen antwoord gevonden";
+console.log(JSON.stringify(data, null, 2));
 
-    return res.status(200).json({
-      antwoord: antwoord
-    });
+let antwoord = "Geen antwoord gevonden";
 
-  } catch (error) {
-    console.error("Server error:", error);
+if (data.output && Array.isArray(data.output)) {
 
-    return res.status(500).json({
-      error: "Server error",
-      details: error.message
-    });
+  for (const item of data.output) {
+
+    if (item.content && Array.isArray(item.content)) {
+
+      for (const content of item.content) {
+
+        if (content.type === "output_text") {
+          antwoord = content.text;
+        }
+
+      }
+    }
+  }
+}
+
+return res.status(200).json({
+  antwoord: antwoord
+});
   }
 }
