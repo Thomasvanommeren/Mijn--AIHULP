@@ -23,6 +23,8 @@
       min-height: 100vh;
       background: #f2f2f2;
       box-shadow: 0 0 18px rgba(0,0,0,0.06);
+      position: relative;
+      overflow: hidden;
     }
 
     header {
@@ -42,6 +44,7 @@
       height: calc(100vh - 70px);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     #loginScreen {
@@ -110,7 +113,7 @@
     }
 
     #inputArea {
-      position: fixed;
+      position: absolute;
       left: 50%;
       transform: translateX(-50%);
       bottom: 16px;
@@ -376,6 +379,13 @@
     return null;
   }
 
+
+  function scrollChatToBottom() {
+    requestAnimationFrame(() => {
+      scrollChatToBottom();
+    });
+  }
+
   function addMessage(text, type) {
 
     const div = document.createElement("div");
@@ -387,7 +397,7 @@
 
     chat.appendChild(div);
 
-    chat.scrollTop = chat.scrollHeight;
+    scrollChatToBottom();
 
     return div;
   }
@@ -401,6 +411,7 @@
 
     pendingPreviewImg.src = imageDataUrl;
     pendingPreview.style.display = "block";
+    scrollChatToBottom();
   }
 
   function clearPendingScreenshot() {
