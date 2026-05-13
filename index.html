@@ -230,19 +230,17 @@
   });
 
   vraagInput?.addEventListener("paste", async (event) => {
-    const items = event.clipboardData?.items || [];
+    const file = getImageFromClipboard(event);
 
-    for (const item of items) {
-      if (!item.type.startsWith("image/")) continue;
-
-      const file = item.getAsFile();
-      if (!file) continue;
-
-      pastedImageDataUrl = await readImageAsDataUrl(file);
-      imageInput.value = "";
-      imageName.textContent = "Screenshot: geplakt met Ctrl+V";
-      break;
+    if (!file) {
+      return;
     }
+
+    event.preventDefault();
+
+    pastedImageDataUrl = await readImageAsDataUrl(file);
+    imageInput.value = "";
+    imageName.textContent = "Screenshot: geplakt met Ctrl+V";
   });
 
   function login() {
@@ -281,6 +279,29 @@
     }
 
   });
+
+
+  function getImageFromClipboard(event) {
+    const clipboardData = event.clipboardData;
+
+    if (!clipboardData) return null;
+
+    const files = Array.from(clipboardData.files || []);
+    const imageFile = files.find((file) => file.type.startsWith("image/"));
+
+    if (imageFile) return imageFile;
+
+    const items = Array.from(clipboardData.items || []);
+
+    for (const item of items) {
+      if (!item.type.startsWith("image/")) continue;
+
+      const file = item.getAsFile();
+      if (file) return file;
+    }
+
+    return null;
+  }
 
   function addMessage(text, type) {
 
