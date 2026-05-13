@@ -85,6 +85,19 @@
       white-space: pre-wrap;
     }
 
+    .message.image-preview {
+      padding: 8px;
+      background: transparent;
+      border: none;
+    }
+
+    .message.image-preview img {
+      width: min(320px, 100%);
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,0.12);
+      display: block;
+    }
+
     .user {
       align-self: flex-end;
       background: #007aff;
@@ -339,6 +352,25 @@
     return div;
   }
 
+  function addImagePreview(imageDataUrl, type) {
+
+    const div = document.createElement("div");
+    const img = document.createElement("img");
+
+    div.classList.add("message", type, "image-preview");
+
+    img.src = imageDataUrl;
+    img.alt = "Screenshot preview";
+
+    div.appendChild(img);
+    chat.appendChild(div);
+
+    chat.scrollTop = chat.scrollHeight;
+
+    return div;
+  }
+
+
   function readImageAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -355,23 +387,29 @@
 
     if (!vraag && !selectedImage && !pastedImageDataUrl) return;
 
-    if (vraag) {
-      addMessage(vraag, "user");
-    } else {
-      addMessage("[Screenshot verstuurd zonder tekst]", "user");
-    }
-
-    vraagInput.value = "";
-
-    const loadingMessage = addMessage(
-      "Thomas 2.0 denkt even na...",
-      "bot"
-    );
+    let loadingMessage = null;
 
     try {
       const imageDataUrl = selectedImage
         ? await readImageAsDataUrl(selectedImage)
         : pastedImageDataUrl;
+
+      if (vraag) {
+        addMessage(vraag, "user");
+      } else {
+        addMessage("[Screenshot verstuurd zonder tekst]", "user");
+      }
+
+      if (imageDataUrl) {
+        addImagePreview(imageDataUrl, "user");
+      }
+
+      vraagInput.value = "";
+
+      loadingMessage = addMessage(
+        "Thomas 2.0 denkt even na...",
+        "bot"
+      );
 
       const res = await fetch("/api/ask", {
         method: "POST",
@@ -414,7 +452,9 @@
 
     } catch (error) {
 
-      loadingMessage.remove();
+      if (loadingMessage) {
+        loadingMessage.remove();
+      }
 
       addMessage(
         "Er ging iets mis met de verbinding.",
