@@ -273,7 +273,7 @@
 
   <div id="inputArea">
     <div id="uploadRow">
-      <span id="imageName">Plak een screenshot met Ctrl+V</span>
+      <span id="imageName">Maak screenshot met Shift+Win+S en plak met Ctrl+V</span>
     </div>
 
     <div id="attachmentPreview" style="display:none;">
@@ -453,7 +453,7 @@
 
   function clearPendingScreenshot() {
     pastedImageBase64 = null;
-    imageName.textContent = "Plak een screenshot met Ctrl+V";
+    imageName.textContent = "Maak screenshot met Shift+Win+S en plak met Ctrl+V";
     renderPendingPreview(null);
   }
 
@@ -483,7 +483,7 @@
       pastedImageBase64 = null;
       attachmentPreviewImg.removeAttribute("src");
       attachmentPreview.style.display = "none";
-      imageName.textContent = "Plak een screenshot met Ctrl+V";
+      imageName.textContent = "Maak screenshot met Shift+Win+S en plak met Ctrl+V";
 
       loadingMessage = addMessage(
         "Thomas 2.0 denkt even na...",
