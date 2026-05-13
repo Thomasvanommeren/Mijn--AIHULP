@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -57,31 +57,43 @@ Geef korte, duidelijke en praktische antwoorden.
       })
     });
 
+    const text = await response.text();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: "OpenAI error",
+        details: text
+      });
+    }
+
     const data = JSON.parse(text);
 
-console.log(JSON.stringify(data, null, 2));
+    let antwoord = "Geen antwoord gevonden";
 
-let antwoord = "Geen antwoord gevonden";
+    if (data.output_text) {
+      antwoord = data.output_text;
+    }
 
-if (data.output && Array.isArray(data.output)) {
-
-  for (const item of data.output) {
-
-    if (item.content && Array.isArray(item.content)) {
-
-      for (const content of item.content) {
-
-        if (content.type === "output_text") {
-          antwoord = content.text;
+    if (data.output && Array.isArray(data.output)) {
+      for (const item of data.output) {
+        if (item.content && Array.isArray(item.content)) {
+          for (const content of item.content) {
+            if (content.type === "output_text" && content.text) {
+              antwoord = content.text;
+            }
+          }
         }
-
       }
     }
-  }
-}
 
-return res.status(200).json({
-  antwoord: antwoord
-});
+    return res.status(200).json({
+      antwoord
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: "Server error",
+      details: error.message
+    });
   }
 }
