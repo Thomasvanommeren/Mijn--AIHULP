@@ -14,6 +14,7 @@
       font-family: Arial, sans-serif;
       background: #e6f2ff;
       height: 100vh;
+      overflow: hidden;
     }
 
 
@@ -494,7 +495,7 @@
       }
       conversationHistory.push({ role: "assistant", content: antwoord });
 
-      clearPendingScreenshot();
+      // Preview blijft zichtbaar tot gebruiker op × klikt.
 
     } catch (error) {
 
