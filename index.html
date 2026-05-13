@@ -1,33 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
-  <title>Vraag het AI</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Thomas 2.0 - Proteus Goeroe</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      color: #222;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #antwoord {
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      min-height: 80px;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      opacity: 0.6;
+    }
+  </style>
 </head>
+
 <body>
 
-<h1>Stel je vraag</h1>
+  <h1>Thomas 2.0 - Proteus Goeroe</h1>
 
-<input id="vraag" placeholder="Typ je vraag">
-<button onclick="ask()">Verstuur</button>
+  <input
+    id="vraag"
+    type="text"
+    placeholder="Typ je vraag over Proteus..."
+  >
 
-<p id="antwoord"></p>
+  <button onclick="ask()">
+    Verstuur
+  </button>
 
-<script>
-async function ask() {
-  const vraag = document.getElementById("vraag").value;
+  <div id="antwoord">
+    Stel een vraag aan Thomas 2.0
+  </div>
 
-  const res = await fetch("/api/ask", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ vraag })
-  });
+  <script>
 
-  const data = await res.json();
-  document.getElementById("antwoord").innerText = data.antwoord;
-}
-</script>
+    async function ask() {
+
+      const vraagInput = document.getElementById("vraag");
+      const antwoordDiv = document.getElementById("antwoord");
+
+      const vraag = vraagInput.value.trim();
+
+      if (!vraag) {
+        antwoordDiv.innerText = "Typ eerst een vraag.";
+        return;
+      }
+
+      antwoordDiv.classList.add("loading");
+      antwoordDiv.innerText = "Thomas 2.0 denkt even na...";
+
+      try {
+
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ vraag })
+        });
+
+        const data = await res.json();
+
+        // API foutmelding
+        if (!res.ok) {
+          console.error(data);
+
+          antwoordDiv.innerText =
+            "Serverfout:\n\n" +
+            (data.details || data.error || "Onbekende fout");
+
+          return;
+        }
+
+        // Succes
+        antwoordDiv.innerText =
+          data.antwoord || "Geen antwoord ontvangen.";
+
+      } catch (error) {
+
+        console.error(error);
+
+        antwoordDiv.innerText =
+          "Er ging iets mis met de verbinding.";
+
+      } finally {
+
+        antwoordDiv.classList.remove("loading");
+
+      }
+    }
+
+  </script>
 
 </body>
 </html>
