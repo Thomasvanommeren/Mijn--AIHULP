@@ -260,8 +260,7 @@
 
   <div id="inputArea">
     <div id="uploadRow">
-      <input type="file" id="imageInput" accept="image/*">
-      <span id="imageName">Geen screenshot geselecteerd</span>
+      <span id="imageName">Plak een screenshot met Ctrl+V</span>
     </div>
 
     <div id="pendingPreview" style="display:none;">
@@ -286,7 +285,6 @@
 <script>
 
   const vraagInput = document.getElementById("vraag");
-  const imageInput = document.getElementById("imageInput");
   const imageName = document.getElementById("imageName");
   const pendingPreview = document.getElementById("pendingPreview");
   const pendingPreviewImg = document.getElementById("pendingPreviewImg");
@@ -299,23 +297,6 @@
     showChat();
   }
 
-  imageInput?.addEventListener("change", () => {
-    const file = imageInput.files?.[0];
-
-    if (file) {
-      pastedImageDataUrl = null;
-    }
-
-    imageName.textContent = file
-      ? `Screenshot: ${file.name}`
-      : "Geen screenshot geselecteerd";
-
-    if (file) {
-      readImageAsDataUrl(file).then(renderPendingPreview);
-    } else {
-      renderPendingPreview(null);
-    }
-  });
 
   vraagInput?.addEventListener("paste", async (event) => {
     const file = getImageFromClipboard(event);
@@ -327,8 +308,7 @@
     event.preventDefault();
 
     pastedImageDataUrl = await readImageAsDataUrl(file);
-    imageInput.value = "";
-    imageName.textContent = "Screenshot: geplakt met Ctrl+V";
+    imageName.textContent = "Screenshot klaar om te versturen";
     renderPendingPreview(pastedImageDataUrl);
   });
 
@@ -424,9 +404,8 @@
   }
 
   function clearPendingScreenshot() {
-    imageInput.value = "";
     pastedImageDataUrl = null;
-    imageName.textContent = "Geen screenshot geselecteerd";
+    imageName.textContent = "Plak een screenshot met Ctrl+V";
     renderPendingPreview(null);
   }
 
@@ -443,16 +422,12 @@
   async function ask() {
 
     const vraag = vraagInput.value.trim();
-    const selectedImage = imageInput.files?.[0];
-
-    if (!vraag && !selectedImage && !pastedImageDataUrl) return;
+    if (!vraag && !pastedImageDataUrl) return;
 
     let loadingMessage = null;
 
     try {
-      const imageDataUrl = selectedImage
-        ? await readImageAsDataUrl(selectedImage)
-        : pastedImageDataUrl;
+      const imageDataUrl = pastedImageDataUrl;
 
       if (vraag) {
         addMessage(vraag, "user");
