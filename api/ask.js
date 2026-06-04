@@ -6,11 +6,13 @@ export default async function handler(req, res) {
       });
     }
 
-    const { vraag, history = [] } = req.body || {};
+    const { vraag = "", history = [], screenshot = null, imageBase64 = null, gebruiker = "", sessie = "" } = req.body || {};
 
-    if (!vraag) {
+    const providedImage = imageBase64 || screenshot;
+
+    if (!vraag && !providedImage) {
       return res.status(400).json({
-        error: "Geen vraag ontvangen"
+        error: "Geen vraag of screenshot ontvangen"
       });
     }
 
@@ -19,6 +21,24 @@ export default async function handler(req, res) {
         error: "OPENAI_API_KEY ontbreekt in Vercel"
       });
     }
+
+
+    const userContent = [];
+
+    if (vraag) {
+      userContent.push({
+        type: "input_text",
+        text: vraag
+      });
+    }
+
+    if (providedImage && typeof providedImage === "string") {
+      userContent.push({
+        type: "input_image",
+        image_url: providedImage
+      });
+    }
+
 
     const cleanHistory = Array.isArray(history)
       ? history
@@ -64,6 +84,7 @@ GEDRAGSREGELS
 - Als de gebruiker een vervolgvraag stelt zoals "en daarna?", "waar klik ik dan?", "wat bedoel je daarmee?" of "kan je dat uitleggen?", gebruik dan de vorige vraag en jouw vorige antwoord als context.
 - Je mag de bronnen interpreteren en synoniemen gebruiken.
 - Je hoeft niet te vermelden waar het exact staat.
+- Noem nooit bronnamen, bestandsnamen, documenttitels of verwijzingen in je antwoord.
 - Staat iets niet in de bestanden? Zeg dat eerlijk en verzin niets.
 
 VERIFICATIE & BEVESTIGING
@@ -71,6 +92,9 @@ VERIFICATIE & BEVESTIGING
 - Als de vraag onduidelijk is, stel maximaal 1 gerichte verduidelijkingsvraag.
 - Is de vraag duidelijk? Geef direct antwoord.
 - Geef praktische antwoorden in duidelijke stappen.
+- Geef GEEN korte samenvatting of herhaling van hetzelfde antwoord.
+- Antwoord standaard kort en duidelijk (maximaal 3-5 zinnen of 3 stappen).
+- Geef alleen een uitgebreider antwoord als de gebruiker daar expliciet om vraagt, bijvoorbeeld met: "leg uit", "meer details", "uitgebreid", "stap voor stap".
 
 AFBEELDINGEN
 
@@ -86,7 +110,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
           ...cleanHistory,
           {
             role: "user",
-            content: vraag
+            content: userContent
           }
         ],
         tools: [
@@ -126,6 +150,31 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
             }
           }
         }
+      }
+    }
+
+    if (process.env.GOOGLE_SHEET_WEBHOOK) {
+      try {
+        const sheetResponse = await fetch(process.env.GOOGLE_SHEET_WEBHOOK, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            datum: new Date().toISOString(),
+            vraag: vraag,
+            antwoord: antwoord,
+            gebruiker: "webchat",
+            sessie: "proteus-ai"
+          })
+        });
+
+        if (!sheetResponse.ok) {
+          const sheetErrorText = await sheetResponse.text();
+          console.error("Google Sheets logging failed:", sheetResponse.status, sheetErrorText);
+        }
+      } catch (sheetError) {
+        console.error("Google Sheets logging error:", sheetError);
       }
     }
 
