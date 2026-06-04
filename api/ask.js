@@ -58,7 +58,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-5.1",
+        model: "gpt-5-mini",
         input: [
           {
             role: "system",
