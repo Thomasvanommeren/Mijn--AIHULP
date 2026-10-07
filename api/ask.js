@@ -48,7 +48,7 @@ export default async function handler(req, res) {
               (item.role === "user" || item.role === "assistant") &&
               typeof item.content === "string"
           )
-          .slice(-10)
+          .slice(-6)
       : [];
 
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -58,7 +58,8 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-5-mini",
+        model: "gpt-6-luna",
+        reasoning: { effort: "none" },
         input: [
           {
             role: "system",
@@ -80,12 +81,19 @@ Je werkt voor een interieurbouw organisatie.
 GEDRAGSREGELS
 
 - Beantwoord vragen uitsluitend op basis van de gekoppelde bronnen.
+- Zoek via file_search in zowel onze interne Proteus-documenten als de geïmporteerde officiële ECI Proteus Online Help.
+- Interne documenten zijn leidend voor onze bedrijfsspecifieke werkwijze.
+- De geïmporteerde officiële ECI Proteus Online Help is leidend voor algemene Proteus-functionaliteit.
+- Gebruik geen algemene websearch voor Proteus-antwoorden.
+- Als intern en ECI van elkaar afwijken, volg de interne werkwijze en benoem alleen indien relevant dat dit bedrijfsspecifiek is.
 - Gebruik de eerdere berichten in dit gesprek om vervolgvragen goed te begrijpen.
 - Als de gebruiker een vervolgvraag stelt zoals "en daarna?", "waar klik ik dan?", "wat bedoel je daarmee?" of "kan je dat uitleggen?", gebruik dan de vorige vraag en jouw vorige antwoord als context.
 - Je mag de bronnen interpreteren en synoniemen gebruiken.
 - Je hoeft niet te vermelden waar het exact staat.
-- Noem nooit bronnamen, bestandsnamen, documenttitels of verwijzingen in je antwoord.
-- Staat iets niet in de bestanden? Zeg dat eerlijk en verzin niets.
+- Noem geen bestandsnamen of documenttitels.
+- Als je aantoonbaar interne documenten hebt gebruikt, mag je onderaan kort vermelden: "Bron: interne Proteus-handleiding".
+- Als je aantoonbaar de officiële ECI Online Help hebt gebruikt, mag je onderaan kort vermelden: "Bron: ECI Proteus Online Help".
+- Staat iets niet in de interne bestanden én niet in de officiële ECI-handleiding? Zeg dat eerlijk en verzin niets.
 
 VERIFICATIE & BEVESTIGING
 
@@ -103,8 +111,8 @@ AFBEELDINGEN
 
 FOUTAFHANDELING
 
-Als het antwoord echt niet gevonden kan worden, zeg dan exact:
-"Ik kan je helaas niet verder helpen, bespreek je vraag met Thomas."
+Als het antwoord niet met voldoende zekerheid gevonden kan worden in de interne documenten of de officiële ECI Proteus Online Help, zeg dan exact:
+"Ik kan het antwoord niet met voldoende zekerheid vinden. Bespreek je vraag met Thomas."
 `
           },
           ...cleanHistory,
@@ -120,7 +128,8 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
               "vs_69f47e3062c081919278a3f90251e981"
             ]
           }
-        ]
+        ],
+        tool_choice: "auto"
       })
     });
 
