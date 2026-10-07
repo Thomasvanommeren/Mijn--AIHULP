@@ -1,0 +1,27 @@
+name: Import ECI Proteus Online Help
+
+on:
+  workflow_dispatch:
+
+jobs:
+  import-eci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Import ECI Online Help into OpenAI vector store
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PROTEUS_VECTOR_STORE_ID: vs_69f47e3062c081919278a3f90251e981
+          ECI_MAX_PAGES: "2500"
+          ECI_CONCURRENCY: "8"
+          ECI_FILE_CHUNK_PAGES: "350"
+        run: node scripts/import-eci.js
