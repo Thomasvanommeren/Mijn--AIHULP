@@ -279,6 +279,15 @@
     #vraag{font-size:16px;min-height:58px}
     #composeRow button{min-width:80px;padding:10px 12px}
   }
+
+    .answer-sources{margin-top:15px;padding-top:12px;border-top:1px solid var(--brand-line);display:flex;gap:7px;flex-wrap:wrap;align-items:center;font-size:12px}
+    .answer-sources strong{color:var(--brand-muted);font-weight:600;margin-right:3px}
+    .answer-sources a,.answer-image a{color:var(--brand-teal);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+    .answer-sources a{background:var(--brand-soft);border-radius:4px;padding:5px 9px}
+    .answer-images{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:14px}
+    .answer-image{margin:0;border:1px solid var(--brand-line);border-radius:5px;padding:8px;min-width:0}
+    .answer-image img{display:block;width:100%;height:auto;max-height:275px;object-fit:contain;background:#fff;border-radius:3px}
+    .answer-image figcaption{font-size:12px;color:var(--brand-muted);margin-top:6px}
   @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 </style>
@@ -475,6 +484,83 @@
     return div;
   }
 
+
+  function addBotAnswer(answer, bronnen, afbeeldingen) {
+    const div = document.createElement("div");
+    div.classList.add("message", "bot");
+    const body = document.createElement("div");
+    body.textContent = String(answer || "Geen antwoord ontvangen.")
+      .replace(/cite[^]*/g, "")
+      .replace(/【\\d+†[^】]*】/g, "")
+      .replace(/(^|\\n)#{1,4}\\s+/g, "$1")
+      .replace(/\\*\\*([^*]+)\\*\\*/g, "$1")
+      .replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^)]+)\\)/g, "$1 ($2)")
+      .trim();
+    div.appendChild(body);
+
+    const validSources = Array.isArray(bronnen) ? bronnen.filter(item => {
+      try {
+        const u = new URL(item.url);
+        return u.protocol === "https:" && u.hostname === "eu-manuals.ecisolutions.com"
+          && u.pathname.startsWith("/proteus/proteus_nl/Content/");
+      } catch { return false; }
+    }).slice(0, 4) : [];
+
+    if (validSources.length) {
+      const section = document.createElement("div");
+      section.className = "answer-sources";
+      const label = document.createElement("strong");
+      label.textContent = "Bronnen:";
+      section.appendChild(label);
+      for (const source of validSources) {
+        const a = document.createElement("a");
+        a.href = source.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = source.titel || "ECI Online Help";
+        section.appendChild(a);
+      }
+      div.appendChild(section);
+    }
+
+    const validImages = Array.isArray(afbeeldingen) ? afbeeldingen.filter(img => {
+      try {
+        const image = new URL(img.url), source = new URL(img.bron);
+        return image.protocol === "https:" && image.hostname === "eu-manuals.ecisolutions.com"
+          && source.hostname === image.hostname && validSources.some(s => s.url === source.href);
+      } catch { return false; }
+    }).slice(0, 3) : [];
+
+    if (validImages.length) {
+      const container = document.createElement("div");
+      container.className = "answer-images";
+      for (const item of validImages) {
+        const figure = document.createElement("figure");
+        figure.className = "answer-image";
+        const img = document.createElement("img");
+        img.src = item.url;
+        img.alt = item.alt || "Schermvoorbeeld uit de ECI-handleiding";
+        img.loading = "lazy";
+        img.referrerPolicy = "no-referrer";
+        img.onerror = () => figure.remove();
+        const cap = document.createElement("figcaption");
+        const a = document.createElement("a");
+        a.href = item.bron;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = "Bekijk afbeelding in ECI-handleiding";
+        cap.appendChild(a);
+        figure.append(img, cap);
+        container.appendChild(figure);
+      }
+      div.appendChild(container);
+    }
+
+    chat.appendChild(div);
+    scrollChatToBottom();
+    return div;
+  }
+
   function addUserMessage(text, imageBase64) {
     const div = document.createElement("div");
 
@@ -581,7 +667,7 @@
       }
 
       const antwoord = data.antwoord || "Geen antwoord ontvangen.";
-      addMessage(antwoord, "bot");
+      addBotAnswer(antwoord, data.bronnen, data.afbeeldingen);
 
       if (vraag) {
         conversationHistory.push({ role: "user", content: vraag });
