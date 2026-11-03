@@ -1,3 +1,49 @@
+const ECI_HOST = "eu-manuals.ecisolutions.com";
+function safeEciPage(raw) {
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" && u.hostname === ECI_HOST
+      && u.pathname.startsWith("/proteus/proteus_nl/Content/")
+      && /\.html?$/i.test(u.pathname) ? u.href : null;
+  } catch { return null; }
+}
+function cleanAnswer(value) {
+  return String(value || "").replace(/cite[^]*/g, "")
+    .replace(/【\d+†[^】]*】/g, "").trim();
+}
+function attrsOf(tag) {
+  const attrs = {};
+  for (const m of tag.matchAll(/([a-zA-Z][\w-]*)\s*=\s*(["'])(.*?)\2/g)) attrs[m[1].toLowerCase()] = m[3];
+  return attrs;
+}
+async function getEciImages(source) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const r = await fetch(source.url, {signal: controller.signal, redirect:"error",headers:{Accept:"text/html"}});
+    if (!r.ok || !(r.headers.get("content-type") || "").includes("text/html")) return [];
+    const html = (await r.text()).slice(0, 750000);
+    const images = [];
+    for (const match of html.matchAll(/<img\b[^>]*>/gi)) {
+      const a = attrsOf(match[0]);
+      const src = a.src || a["data-src"];
+      if (!src || src.startsWith("data:")) continue;
+      let u;
+      try { u = new URL(src.replace(/&amp;/g, "&"), source.url); } catch { continue; }
+      if (u.protocol !== "https:" || u.hostname !== ECI_HOST || !/\.(png|jpe?g|webp|gif)$/i.test(u.pathname)) continue;
+      const label = (a.alt || a.title || "").trim();
+      if (/logo|icon|icoon|arrow|pijl|banner|bullet|search|zoeken|menu|print|helpdesk/i.test(label + " " + u.pathname.split("/").pop())) continue;
+      const w = Number(a.width || 0), h = Number(a.height || 0);
+      if ((w && w < 180) || (h && h < 110)) continue;
+      if (images.some(i => i.url === u.href)) continue;
+      images.push({url: u.href, alt: label || "Schermvoorbeeld uit Proteus Online Help", bron: source.url});
+      if (images.length === 2) break;
+    }
+    return images;
+  } catch { return []; }
+  finally { clearTimeout(timeout); }
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
@@ -91,7 +137,7 @@ VERIFICATIE & BEVESTIGING
 
 - Als de vraag onduidelijk is, stel maximaal 1 gerichte verduidelijkingsvraag.
 - Is de vraag duidelijk? Geef direct antwoord.
-- Geef praktische antwoorden in duidelijke stappen.
+- Geef praktische antwoorden in duidelijke stappen.\n- Gebruik geen technische citatiemarkeringen in de antwoordtekst.
 - Geef GEEN korte samenvatting of herhaling van hetzelfde antwoord.
 - Antwoord standaard kort en bondig.
 - Geef alleen een uitgebreider antwoord als de gebruiker daar expliciet om vraagt, bijvoorbeeld met: "leg uit", "meer details", "uitgebreid", "stap voor stap".
@@ -144,6 +190,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
     const data = JSON.parse(text);
 
     let antwoord = "Geen antwoord gevonden";
+    const bronnen = [];
 
     if (data.output_text) {
       antwoord = data.output_text;
@@ -155,11 +202,21 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
           for (const content of item.content) {
             if (content.type === "output_text" && content.text) {
               antwoord = content.text;
+              for (const annotation of content.annotations || []) {
+                if (annotation.type !== "url_citation") continue;
+                const url = safeEciPage(annotation.url);
+                if (url && !bronnen.some(b => b.url === url)) {
+                  bronnen.push({ url, titel: String(annotation.title || "ECI Online Help").slice(0, 150) });
+                }
+              }
             }
           }
         }
       }
     }
+
+    antwoord = cleanAnswer(antwoord);
+    const afbeeldingen = (await Promise.all(bronnen.slice(0, 2).map(getEciImages))).flat().slice(0, 3);
 
     if (process.env.GOOGLE_SHEET_WEBHOOK) {
       try {
@@ -186,9 +243,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
       }
     }
 
-    return res.status(200).json({
-      antwoord
-    });
+    return res.status(200).json({ antwoord, bronnen, afbeeldingen });
 
   } catch (error) {
     return res.status(500).json({
