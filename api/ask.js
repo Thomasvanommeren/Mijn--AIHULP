@@ -11,38 +11,6 @@ function cleanAnswer(value) {
   return String(value || "").replace(/cite[^]*/g, "")
     .replace(/【\d+†[^】]*】/g, "").trim();
 }
-function attrsOf(tag) {
-  const attrs = {};
-  for (const m of tag.matchAll(/([a-zA-Z][\w-]*)\s*=\s*(["'])(.*?)\2/g)) attrs[m[1].toLowerCase()] = m[3];
-  return attrs;
-}
-async function getEciImages(source) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4500);
-  try {
-    const r = await fetch(source.url, {signal: controller.signal, redirect:"error",headers:{Accept:"text/html"}});
-    if (!r.ok || !(r.headers.get("content-type") || "").includes("text/html")) return [];
-    const html = (await r.text()).slice(0, 750000);
-    const images = [];
-    for (const match of html.matchAll(/<img\b[^>]*>/gi)) {
-      const a = attrsOf(match[0]);
-      const src = a.src || a["data-src"];
-      if (!src || src.startsWith("data:")) continue;
-      let u;
-      try { u = new URL(src.replace(/&amp;/g, "&"), source.url); } catch { continue; }
-      if (u.protocol !== "https:" || u.hostname !== ECI_HOST || !/\.(png|jpe?g|webp|gif)$/i.test(u.pathname)) continue;
-      const label = (a.alt || a.title || "").trim();
-      if (/logo|icon|icoon|arrow|pijl|banner|bullet|search|zoeken|menu|print|helpdesk/i.test(label + " " + u.pathname.split("/").pop())) continue;
-      const w = Number(a.width || 0), h = Number(a.height || 0);
-      if ((w && w < 180) || (h && h < 110)) continue;
-      if (images.some(i => i.url === u.href)) continue;
-      images.push({url: u.href, alt: label || "Schermvoorbeeld uit Proteus Online Help", bron: source.url});
-      if (images.length === 2) break;
-    }
-    return images;
-  } catch { return []; }
-  finally { clearTimeout(timeout); }
-}
 
 export default async function handler(req, res) {
   try {
@@ -216,7 +184,7 @@ Als het antwoord echt niet gevonden kan worden, zeg dan exact:
     }
 
     antwoord = cleanAnswer(antwoord);
-    const afbeeldingen = (await Promise.all(bronnen.slice(0, 2).map(getEciImages))).flat().slice(0, 3);
+    const afbeeldingen = []; // Illustrations load separately after the answer.
 
     if (process.env.GOOGLE_SHEET_WEBHOOK) {
       try {
