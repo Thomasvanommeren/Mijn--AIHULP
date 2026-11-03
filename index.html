@@ -491,10 +491,9 @@
     const body = document.createElement("div");
     body.textContent = String(answer || "Geen antwoord ontvangen.")
       .replace(/cite[^]*/g, "")
-      .replace(/【\\d+†[^】]*】/g, "")
-      .replace(/(^|\\n)#{1,4}\\s+/g, "$1")
-      .replace(/\\*\\*([^*]+)\\*\\*/g, "$1")
-      .replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^)]+)\\)/g, "$1 ($2)")
+      .replace(/【\d+†[^】]*】/g, "")
+      .replace(/(^|\n)#{1,4}\s+/g, "$1")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
       .trim();
     div.appendChild(body);
 
