@@ -290,6 +290,25 @@
     .answer-image figcaption{font-size:12px;color:var(--brand-muted);margin-top:6px}
   @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
+
+  /* Compacte openingsweergave en benut de beschikbare breedte. */
+  .chat-layout{width:calc(100% - 48px);max-width:1600px;margin:0 auto;padding:20px 0 170px}
+  .chat-heading{padding-bottom:10px;margin-bottom:14px}
+  .chat-heading h1{font-size:23px;margin:3px 0}
+  .chat-heading p{font-size:13px}
+  .message{max-width:min(1040px,92%);white-space:pre-wrap}
+  .message.bot:first-child{padding:12px 15px}
+  #chat{gap:10px}
+  #inputArea{padding:10px 18px 12px}
+  .composer-inner{max-width:1550px;width:calc(100% - 12px)}
+  #vraag{min-height:44px;max-height:150px;height:48px;padding:11px 13px}
+  #composeRow button{min-width:100px;padding:10px 14px}
+  @media(max-width:600px){
+    .chat-layout{width:calc(100% - 24px);padding:15px 0 170px}
+    .message{max-width:100%}
+    .composer-inner{width:100%}
+    #vraag{height:49px;min-height:49px}
+  }
 </style>
 </head>
 
@@ -328,14 +347,10 @@
 <div id="chatScreen" style="display:none;">
 
   <div class="chat-layout">
-  <div class="chat-heading"><div class="eyebrow">Beerens Group · Kennisassistent</div><h1>Waarmee kan ik helpen?</h1><p>Stel je vraag over Proteus of plak een screenshot van je scherm.</p></div>
+  <div class="chat-heading"><div class="eyebrow">Beerens Group · Kennisassistent</div><h1>Proteus Goeroe</h1><p>Stel je vraag of plak een screenshot.</p></div>
   <div id="chat" aria-live="polite">
 
-    <div class="message bot">
-      Ik ben Thomas 2.0, je Proteus Goeroe.
-      <br><br>
-      Stel je vraag over Proteus.
-    </div>
+    <div class="message bot">Ik ben Thomas 2.0, je Proteus Goeroe. Stel gerust je vraag over Proteus.</div>
 
   </div>
 
@@ -557,7 +572,33 @@
 
     chat.appendChild(div);
     scrollChatToBottom();
+    if (validSources.length && !validImages.length) loadIllustrations(div, validSources);
     return div;
+  }
+
+  async function loadIllustrations(message, bronnen) {
+    try {
+      const query = new URLSearchParams({ url: bronnen[0].url });
+      const response = await fetch("/api/illustrations?" + query.toString());
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!Array.isArray(data.afbeeldingen) || !data.afbeeldingen.length) return;
+      const images = document.createElement("div");
+      images.className = "answer-images";
+      for (const item of data.afbeeldingen.slice(0, 3)) {
+        const source = bronnen.find(b => b.url === item.bron);
+        if (!source) continue;
+        const imageUrl = new URL(item.url);
+        if (imageUrl.protocol !== "https:" || imageUrl.hostname !== "eu-manuals.ecisolutions.com") continue;
+        const figure = document.createElement("figure"); figure.className = "answer-image";
+        const img = document.createElement("img"); img.src = imageUrl.href; img.loading = "lazy";
+        img.alt = item.alt || "Afbeelding uit ECI Online Help"; img.onerror = () => figure.remove();
+        const label = document.createElement("figcaption");
+        const a = document.createElement("a"); a.href = source.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        a.textContent = "Bekijk in ECI-handleiding";label.append(a);figure.append(img, label);images.append(figure);
+      }
+      if (images.childElementCount) message.append(images);
+    } catch { /* Geen geschikte afbeelding gevonden; antwoord blijft zichtbaar. */ }
   }
 
   function addUserMessage(text, imageBase64) {
